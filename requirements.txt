@@ -1,0 +1,4 @@
+streamlit>=1.30.0
+python-frontmatter>=1.0.0
+markdown>=3.5
+Whoosh>=2.7.4
