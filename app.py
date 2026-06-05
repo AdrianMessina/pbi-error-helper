@@ -14,7 +14,12 @@ import streamlit as st
 import kb
 import styles
 
-ASSETS = Path(__file__).parent / "assets"
+try:
+    _ROOT = Path(__file__).parent
+except NameError:
+    _ROOT = Path.cwd()
+
+ASSETS = _ROOT / "assets"
 LOGO_YPF = ASSETS / "logo_ypf.png"
 LOGO_DAIA = ASSETS / "logo_daia.png"
 

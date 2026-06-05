@@ -20,7 +20,10 @@ from whoosh.fields import ID, KEYWORD, NUMERIC, TEXT, Schema
 from whoosh.filedb.filestore import RamStorage
 from whoosh.qparser import MultifieldParser, OrGroup
 
-ROOT = Path(__file__).parent
+try:
+    ROOT = Path(__file__).parent
+except NameError:
+    ROOT = Path.cwd()
 ERRORS_DIR = ROOT / "errors"
 MEDIA_DIR = ROOT / "media"
 

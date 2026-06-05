@@ -14,6 +14,7 @@ CATEGORY_LABELS = {
     "powerquery": "Power Query / M",
     "refresh": "Refresh & Gateway",
     "conexion": "Conexión & Red",
+    "copilot": "Copilot & IA",
 }
 
 CATEGORY_ICONS = {
@@ -22,6 +23,7 @@ CATEGORY_ICONS = {
     "powerquery": "⧉",
     "refresh": "↻",
     "conexion": "⌁",
+    "copilot": "✦",
 }
 
 
