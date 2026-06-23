@@ -16,7 +16,7 @@ search_hints:
   - "Microsoft.Data.Mashup.ErrorCode = 10478"
 related: [conn-003]
 media:
-  images: []
+  images: [conn-009-fig1.png]
   videos: []
 ---
 
