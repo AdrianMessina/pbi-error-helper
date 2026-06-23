@@ -6,6 +6,7 @@ Category browsing and detail views are secondary navigation.
 
 from __future__ import annotations
 
+import html as html_lib
 from pathlib import Path
 
 import markdown as md_lib
@@ -89,15 +90,20 @@ def render_sidebar(entries: list[kb.ErrorEntry]) -> None:
 
         counts = kb.category_counts(entries)
         cats = sorted(counts.keys())
-        options = ["__diag__"] + cats
-        labels = {"__diag__": "  ⌁  Diagnosticar"}
+        options = ["__diag__", "__guias__"] + cats
+        labels = {
+            "__diag__": "  ⌁  Diagnosticar",
+            "__guias__": "  📖  Guías",
+        }
         for c in cats:
             lbl = styles.CATEGORY_LABELS.get(c, c.title())
             icon = styles.CATEGORY_ICONS.get(c, "·")
             labels[c] = f"  {icon}  {lbl}  ·  {counts[c]}"
 
         current = "__diag__"
-        if st.session_state.view == "category" and st.session_state.selected_category:
+        if st.session_state.view == "guias":
+            current = "__guias__"
+        elif st.session_state.view == "category" and st.session_state.selected_category:
             current = st.session_state.selected_category
         elif st.session_state.view == "detail" and st.session_state.selected_category:
             current = st.session_state.selected_category
@@ -110,10 +116,12 @@ def render_sidebar(entries: list[kb.ErrorEntry]) -> None:
             label_visibility="collapsed",
             key="nav_radio",
         )
-        if pick == "__diag__" and st.session_state.view not in ("home", "diagnose", "detail"):
+        if pick == "__diag__" and st.session_state.view != "home":
             goto("home")
-        elif pick != "__diag__" and st.session_state.view != "detail":
-            if st.session_state.selected_category != pick:
+        elif pick == "__guias__" and st.session_state.view != "guias":
+            goto("guias")
+        elif pick not in ("__diag__", "__guias__"):
+            if pick != st.session_state.selected_category or st.session_state.view not in ("category", "detail"):
                 goto("category", category=pick)
 
         st.markdown(
@@ -185,6 +193,31 @@ def render_result_list(items: list[kb.ErrorEntry], *, key_prefix: str = "res") -
                 st.rerun()
 
 
+# ============ GUÍAS ============
+
+GUIAS_DIR = _ROOT / "guias"
+
+_GUIA_TYPE_LABELS = {
+    ".pdf": ("PDF", "📄"),
+    ".pptx": ("PowerPoint", "📊"),
+    ".docx": ("Word", "📝"),
+    ".xlsx": ("Excel", "📈"),
+    ".png": ("Imagen", "🖼️"),
+    ".jpg": ("Imagen", "🖼️"),
+    ".jpeg": ("Imagen", "🖼️"),
+}
+
+
+def _guia_files() -> list[Path]:
+    if not GUIAS_DIR.exists():
+        return []
+    exts = {".pdf", ".pptx", ".docx", ".xlsx", ".png", ".jpg", ".jpeg"}
+    return sorted(
+        (p for p in GUIAS_DIR.iterdir() if p.is_file() and p.suffix.lower() in exts),
+        key=lambda p: p.name.lower(),
+    )
+
+
 # ============ HOME / DIAGNOSTIC CONSOLE ============
 
 def view_home(entries: list[kb.ErrorEntry]) -> None:
@@ -254,6 +287,21 @@ def view_home(entries: list[kb.ErrorEntry]) -> None:
                 """,
                 unsafe_allow_html=True,
             )
+            top_imgs = [p for p in top.entry.image_paths if p.exists()]
+            if top_imgs:
+                st.markdown(
+                    '<div class="section-label" style="margin: 1rem 0 0.5rem;">'
+                    '<span class="marker">REF</span>'
+                    '<span class="title">Ejemplo del error</span>'
+                    '<span class="rule"></span>'
+                    '</div>',
+                    unsafe_allow_html=True,
+                )
+                img_cols = st.columns(min(len(top_imgs), 3))
+                for i, img in enumerate(top_imgs):
+                    with img_cols[i % len(img_cols)]:
+                        st.image(str(img), caption=img.stem, use_container_width=True)
+
             if st.button(
                 f"Ver solución completa  →  {top.entry.id.upper()}",
                 key=f"goto_top_{top.entry.id}",
@@ -387,6 +435,86 @@ def view_category(entries: list[kb.ErrorEntry]) -> None:
         st.rerun()
 
 
+# ============ GUÍAS VIEW ============
+
+def view_guias() -> None:
+    breadcrumb([("Diagnosticar", "home"), ("Guías", None)])
+
+    st.markdown(
+        """
+        <div style="padding: 0.25rem 0 1.5rem; border-bottom: 1px solid var(--line); margin-bottom: 1.5rem;">
+            <p style="font-family: var(--mono); font-size: 0.68rem; font-weight: 600;
+               color: var(--blue); text-transform: uppercase; letter-spacing: 0.14em;
+               margin: 0 0 0.5rem;">Recursos</p>
+            <h1 style="font-size: 2rem; font-weight: 700; margin: 0 0 0.4rem; letter-spacing: -0.03em;">
+                Guías y material de referencia
+            </h1>
+            <p style="font-size: 0.92rem; color: var(--ink-3); margin: 0;">
+                PDFs, presentaciones y documentos de soporte para el equipo.
+                Para agregar más, copiar archivos a la carpeta <code>guias/</code>.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    files = _guia_files()
+
+    if not files:
+        st.markdown(
+            """
+            <div class="empty-state">
+                <div class="empty-icon">📖</div>
+                <h3>Sin guías disponibles</h3>
+                <p>Agregá archivos PDF, PPTX o DOCX a la carpeta <code>guias/</code> para que aparezcan acá.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        return
+
+    for idx, fpath in enumerate(files):
+        ext = fpath.suffix.lower()
+        type_label, type_icon = _GUIA_TYPE_LABELS.get(ext, ("Archivo", "📎"))
+
+        st.markdown(
+            f"""
+            <div class="result-item" style="grid-template-columns: 60px 1fr auto;">
+                <span style="font-size: 1.5rem; text-align: center;">{type_icon}</span>
+                <div>
+                    <p class="r-title">{html_lib.escape(fpath.stem)}</p>
+                    <p class="r-snippet">{type_label} · {fpath.suffix.upper().lstrip('.')}</p>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        mime_map = {
+            ".pdf": "application/pdf",
+            ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+        }
+        st.download_button(
+            f"Descargar {fpath.name}",
+            data=fpath.read_bytes(),
+            file_name=fpath.name,
+            mime=mime_map.get(ext, "application/octet-stream"),
+            key=f"dl_guia_{idx}",
+            use_container_width=True,
+            type="secondary",
+        )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("← Volver al diagnóstico", key="back_from_guias", type="secondary"):
+        goto("home")
+        st.rerun()
+
+
 # ============ DETAIL VIEW ============
 
 def view_detail(entries: list[kb.ErrorEntry]) -> None:
@@ -493,7 +621,9 @@ def main() -> None:
     render_sidebar(entries)
 
     view = st.session_state.view
-    if view == "category" and st.session_state.selected_category:
+    if view == "guias":
+        view_guias()
+    elif view == "category" and st.session_state.selected_category:
         view_category(entries)
     elif view == "detail" and st.session_state.selected_id:
         view_detail(entries)

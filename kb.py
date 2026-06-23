@@ -39,6 +39,7 @@ class ErrorEntry:
     tools: list[str] = field(default_factory=list)
     tags: list[str] = field(default_factory=list)
     related: list[str] = field(default_factory=list)
+    search_hints: list[str] = field(default_factory=list)
     images: list[str] = field(default_factory=list)
     videos: list[str] = field(default_factory=list)
     body: str = ""
@@ -69,6 +70,7 @@ class ErrorEntry:
     @property
     def searchable_text(self) -> str:
         parts = [self.title, self.id, " ".join(str(t) for t in self.tags), " ".join(str(t) for t in self.tools)]
+        parts.extend(self.search_hints)
         sections = self.sections
         if "Síntoma" in sections:
             parts.append(sections["Síntoma"])
@@ -124,6 +126,7 @@ def _parse_file(path: Path) -> ErrorEntry | None:
         tools=list(meta.get("tools", []) or []),
         tags=list(meta.get("tags", []) or []),
         related=list(meta.get("related", []) or []),
+        search_hints=list(meta.get("search_hints", []) or []),
         images=list(media.get("images", []) or []),
         videos=list(media.get("videos", []) or []),
         body=post.content,
@@ -249,12 +252,24 @@ def diagnose(
         tag_hits = sum(1 for t in entry.tags if str(t).lower() in input_lower)
         tag_score = min(0.20, tag_hits * 0.07)
 
+        # Search hint bonus: raw text match (no noise filtering) for bilingual phrases
+        hint_score = 0.0
+        for hint in entry.search_hints:
+            hint_lower = hint.lower()
+            if hint_lower in input_lower or input_lower in hint_lower:
+                hint_score = max(hint_score, 0.35)
+                break
+            ratio = SequenceMatcher(None, input_lower[:300], hint_lower).ratio()
+            if ratio > 0.55:
+                hint_score = max(hint_score, ratio * 0.35)
+
         # Combine with weights
         combined = (
             kw_score * 0.40
             + title_score * 0.25
             + exact_bonus
             + tag_score
+            + hint_score
             + 0.10  # base so nothing is exactly 0
         )
 

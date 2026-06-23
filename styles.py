@@ -15,6 +15,8 @@ CATEGORY_LABELS = {
     "refresh": "Refresh & Gateway",
     "conexion": "Conexión & Red",
     "copilot": "Copilot & IA",
+    "servicio": "Servicio & Capacidad",
+    "visuales": "Visuales & Licencias",
 }
 
 CATEGORY_ICONS = {
@@ -24,6 +26,8 @@ CATEGORY_ICONS = {
     "refresh": "↻",
     "conexion": "⌁",
     "copilot": "✦",
+    "servicio": "⌬",
+    "visuales": "◈",
 }
 
 
@@ -819,21 +823,21 @@ def get_css() -> str:
     .stTextArea textarea {
         font-family: var(--mono) !important;
         font-size: 0.9rem !important;
-        background: rgba(255,255,255,0.06) !important;
-        color: #FFF !important;
-        border: 1px solid rgba(255,255,255,0.10) !important;
+        background: var(--surface-1) !important;
+        color: var(--ink) !important;
+        border: 1px solid var(--line) !important;
         border-radius: var(--r-md) !important;
         padding: 0.85rem !important;
     }
     .stTextArea textarea::placeholder {
-        color: #475569 !important;
+        color: var(--ink-4) !important;
         font-style: italic;
     }
     .stTextArea textarea:focus {
         border-color: var(--blue) !important;
         box-shadow: 0 0 0 3px rgba(4,81,228,0.2) !important;
     }
-    .stTextArea label { color: var(--ink-on-dark) !important; }
+    .stTextArea label { color: var(--ink) !important; }
 
     /* ============ FOOTER ============ */
     .app-footer {
