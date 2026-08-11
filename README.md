@@ -29,7 +29,9 @@ pbi_error_helper/
 │   ├── modelo/
 │   ├── powerquery/
 │   ├── refresh/
-│   └── conexion/
+│   ├── conexion/
+│   ├── copilot/
+│   └── version/            # Errores de versión y compatibilidad
 └── media/
     ├── images/
     └── videos/
@@ -58,8 +60,8 @@ pbi_error_helper/
 
 ## Agregar un nuevo error
 
-1. Elegir categoría: `dax`, `modelo`, `powerquery`, `refresh`, `conexion`. Si
-   no encaja, crear nueva carpeta bajo `errors/`.
+1. Elegir categoría: `dax`, `modelo`, `powerquery`, `refresh`, `conexion`, 
+   `copilot`, `version`. Si no encaja, crear nueva carpeta bajo `errors/`.
 
 2. Crear archivo con nombre `<categoria>-<NNN>-<slug>.md`. Ejemplo:
    `dax-002-blank-vs-zero.md`.
@@ -114,6 +116,68 @@ pbi_error_helper/
 - **Tags:** lowercase, kebab-case. Ej: `circular-dependency`, `power-query`.
 - **Related:** lista de IDs (`[dax-001, modelo-002]`).
 - **Idioma:** los cuerpos en español, los IDs/tags en inglés.
+
+## Importar errores desde Microsoft Teams
+
+La app no se conecta directo a Teams. El flujo recomendado es exportar o copiar
+los mensajes del grupo a un archivo y subirlo desde la sección **Importar
+Teams** de la barra lateral.
+
+Formatos soportados:
+
+- JSON: export de Microsoft Graph/eDiscovery o estructura con `value`,
+  `messages`, `replies`, `body.content`, `createdDateTime`, etc.
+- CSV: columnas como `content`, `body`, `message`, `text`, `createdDateTime`,
+  `author`, `threadId`, `replyToId`, `webUrl`.
+- TXT/HTML: copiado manual desde Teams. El importador usa bloques separados por
+  líneas en blanco.
+
+Desde la app se puede:
+
+- Ver mensajes extraídos.
+- Navegar hilos completos.
+- Revisar candidatos para artículos de la KB.
+- Filtrar por relevancia, solución detectada y texto libre.
+- Descargar CSV, JSON o ZIP con Markdown borrador.
+
+### Uso técnico opcional
+
+Preview sin crear archivos:
+
+```bash
+python import_teams_issues.py --source teams_exports/pbi-teams.json --verbose
+```
+
+Crear artículos en `errors/<categoria>/`:
+
+```bash
+python import_teams_issues.py --source teams_exports/pbi-teams.json --write
+```
+
+Opciones útiles:
+
+```bash
+# Solo hilos donde se detectó una posible solución
+python import_teams_issues.py --source teams_exports/pbi-teams.json --solved-only
+
+# Si el export ya está muy filtrado y el preview trae pocos casos
+python import_teams_issues.py --source teams_exports/pbi-teams.json --min-score 5
+
+# Procesar una carpeta completa con varios exports
+python import_teams_issues.py --source teams_exports --write
+```
+
+El importador:
+
+- Filtra hilos con señales de Power BI + error/bug/solución.
+- Clasifica en `dax`, `modelo`, `powerquery`, `refresh`, `conexion` o `copilot`.
+- Asigna severidad, herramientas y tags.
+- Genera IDs consecutivos según la categoría (`dax-006`, `pq-005`, etc.).
+- Marca cada entrada como `review_status: draft` y agrega `needs-review`.
+
+Revisar siempre los Markdown generados antes de considerarlos definitivos,
+porque la extracción desde conversaciones puede mezclar síntoma, causa y
+solución si el hilo tiene mucho ruido.
 
 ## Deploy en Cloudera
 
