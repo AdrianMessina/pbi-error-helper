@@ -169,31 +169,33 @@ def render_result_list(items: list[kb.ErrorEntry], *, key_prefix: str = "res") -
     if not items:
         return
     for i, e in enumerate(items):
-        st.markdown(
-            f"""
-            <div class="result-item">
-                <span class="r-id">{e.id.upper()}</span>
-                <div>
-                    <p class="r-title">{e.title}</p>
-                    <p class="r-snippet">{e.snippet or ''}</p>
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            st.markdown(
+                f"""
+                <div class="result-item">
+                    <span class="r-id">{e.id.upper()}</span>
+                    <div>
+                        <p class="r-title">{e.title}</p>
+                        <p class="r-snippet">{e.snippet or ''}</p>
+                    </div>
+                    <div style="display:flex; gap:0.35rem;">
+                        {styles.category_badge(e.category)}
+                        {styles.severity_badge(e.severity)}
+                    </div>
                 </div>
-                <div style="display:flex; gap:0.35rem;">
-                    {styles.category_badge(e.category)}
-                    {styles.severity_badge(e.severity)}
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        # Botón prominente para ver detalle
-        if st.button(
-            f"Ver detalle  →  {e.id.upper()}",
-            key=f"{key_prefix}_{e.id}",
-            use_container_width=True,
-            type="primary",
-        ):
-            goto("detail", error_id=e.id, category=e.category)
-            st.rerun()
+                """,
+                unsafe_allow_html=True,
+            )
+        with col2:
+            if st.button(
+                f"Ver → {e.id.upper()}",
+                key=f"{key_prefix}_{i}_{e.id}",
+                use_container_width=True,
+                type="primary",
+            ):
+                goto("detail", error_id=e.id, category=e.category)
+                st.rerun()
 
 
 # ============ GUÍAS ============
@@ -333,10 +335,10 @@ def view_home(entries: list[kb.ErrorEntry]) -> None:
                 for i, m in enumerate(alts):
                     with cols[i % len(cols)]:
                         if st.button(
-                            f"Ver {m.entry.id.upper()}",
-                            key=f"goto_alt_{m.entry.id}",
+                            m.entry.id.upper(),
+                            key=f"goto_alt_{i}_{m.entry.id}",
                             use_container_width=True,
-                            type="primary",
+                            type="secondary",
                         ):
                             goto("detail", error_id=m.entry.id, category=m.entry.category)
                             st.rerun()
@@ -605,9 +607,9 @@ def view_detail(entries: list[kb.ErrorEntry]) -> None:
             with cols[i % len(cols)]:
                 if st.button(
                     rid.upper(),
-                    key=f"rel_{entry.id}_{rid}",
+                    key=f"rel_{entry.id}_{i}_{rid}",
                     use_container_width=True,
-                    type="primary",
+                    type="secondary",
                 ):
                     goto("detail", error_id=rid, category=rel_entry.category)
                     st.rerun()
